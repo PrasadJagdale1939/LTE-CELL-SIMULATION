@@ -1,37 +1,40 @@
 import numpy as np
 import matplotlib.pyplot as plt
 
+# --- Simulation Parameters ---
+np.random.seed(42)  # For reproducibility
 
-cell_radius = 500  
-num_users = 20
-num_rbs = 50  
-bandwidth_per_rb = 180e3  
-tx_power_dbm = 43  
-noise_dbm = -100
-num_slots = 50  
-shadow_std_db = 8  
-mobility_std = 10  
-scheduler = 'PF'  
+cell_radius = 500            # meters
+num_users = 20               # Number of users in the cell
+num_rbs = 50                 # Number of Resource Blocks per slot
+bandwidth_per_rb = 180e3     # 180 kHz per RB (not used directly, but realistic)
+tx_power_dbm = 43            # eNodeB transmit power in dBm
+noise_dbm = -100             # Noise floor in dBm
+num_slots = 50               # Number of time slots to simulate
+shadow_std_db = 8            # Shadow fading standard deviation (dB)
+mobility_std = 10            # User movement per slot (meters)
+scheduler = 'PF'             # 'PF', 'RR', or 'MaxCI'
 
-
+# --- Path Loss Model (3GPP Urban Macro) ---
 def path_loss(distance):
     return 128.1 + 37.6 * np.log10(distance / 1000)
 
-# --- CQI to achievable data rate per RB (simplified, Mbps) ---
-cqi_to_rate = np.linspace(0.1, 2.0, 15)  # 0.1 to 2 Mbps per RB
+# --- CQI to Achievable Data Rate per RB (simplified, Mbps) ---
+cqi_to_rate = np.linspace(0.1, 2.0, 15)  # CQI 1-15 maps to 0.1-2.0 Mbps
 
-# --- Initialize user positions ---
+# --- Initialize User Positions Randomly within the Cell ---
 angles = np.random.uniform(0, 2 * np.pi, num_users)
 radii = cell_radius * np.sqrt(np.random.uniform(0, 1, num_users))
 x = radii * np.cos(angles)
 y = radii * np.sin(angles)
 
-# --- Store throughput history ---
+# --- Throughput History for Each User and Slot ---
 throughput_history = np.zeros((num_users, num_slots))
 
-# --- Round Robin pointer ---
+# --- Round Robin Pointer ---
 rr_pointer = 0
 
+# --- Main Simulation Loop ---
 for slot in range(num_slots):
     # User mobility: random walk
     x += np.random.normal(0, mobility_std, num_users)
@@ -82,7 +85,7 @@ for slot in range(num_slots):
     user_throughput = rb_allocation * inst_rate
     throughput_history[:, slot] = user_throughput
 
-# --- Plot cell and users (last slot) ---
+# --- Plot: Cell and Users (Last Slot) ---
 plt.figure(figsize=(7,7))
 circle = plt.Circle((0, 0), cell_radius, color='b', fill=False, linestyle='--')
 plt.gca().add_patch(circle)
@@ -95,7 +98,7 @@ plt.axis('equal')
 plt.grid(True)
 plt.show()
 
-# --- Plot throughput over time for each user ---
+# --- Plot: Throughput Over Time for Each User ---
 plt.figure(figsize=(10,5))
 for i in range(num_users):
     plt.plot(throughput_history[i], label=f'User {i+1}')
@@ -106,7 +109,7 @@ plt.grid(True)
 plt.tight_layout()
 plt.show()
 
-
+# --- Print Results (Last Slot) ---
 print("User\tCQI\tRBs\tThroughput (Mbps)")
 for i in range(num_users):
     print(f"{i+1}\t{cqi[i]}\t{rb_allocation[i]}\t{throughput_history[i, -1]:.2f}")
